@@ -21,3 +21,9 @@ iterate cargo check
 echo "run" | nc 127.0.0.1 7821
 ```
 
+## Configuration
+If you don't want iterate to print the exit code of your command, you can set the `ITERATE_QUIET` variable.
+```bash
+ITERATE_QUIET=1 iterate launch nukes
+```
+

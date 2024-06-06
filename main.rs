@@ -1,7 +1,14 @@
 use std::net::{TcpListener, SocketAddrV4, Ipv4Addr, Shutdown};
+use std::process::Command;
 use std::io::Read;
+use std::env::VarError;
 
 fn main() -> Result<(), std::io::Error> {
+    let quiet = match std::env::var("ITERATE_QUIET") {
+        Err(VarError::NotPresent) => false,
+        Ok(s) if s.is_empty() => false,
+        _ => true,
+    };
     let cmd = std::env::args().skip(1).collect::<Vec<_>>();
     if cmd.is_empty() {
         return Ok(());
@@ -22,8 +29,8 @@ fn main() -> Result<(), std::io::Error> {
         if msg.trim() != "run" {
             continue;
         }
-        let child = std::process::Command::new(&cmd[0])
-            .args(cmd.iter().skip(1))
+        let child = Command::new(&cmd[0])
+            .args(cmd.iter().map(std::ops::Deref::deref).skip(1))
             .spawn();
         let mut child = match child {
             Ok(child) => child,
@@ -32,8 +39,11 @@ fn main() -> Result<(), std::io::Error> {
                 continue;
             }
         };
-        child.wait()?;
+        let exit_code = child.wait()?;
         client.shutdown(Shutdown::Both)?;
+        if !quiet {
+            println!("iterate: command exited with {exit_code}");
+        }
     }
 }
 
